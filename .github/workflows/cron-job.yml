@@ -1,4 +1,4 @@
-name: Daily API Key Rotation Job
+name: Daily Web Scrap
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:  # Allows manual execution
 
 jobs:
-  fetch-company-names:
+  fetch-job-details:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,11 +21,11 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: Run API Key Rotation Script
-        env:
-          API_KEYS: ${{ secrets.API_KEYS }}
-          CSE_CONFIG: ${{ secrets.CSE_CONFIG }}
+      - name: Run Job URL Scraper
         run: python script.py
+
+      - name: Run Job Details Scraper
+        run: python job-details-scraper.py
 
       - name: Commit and Push Changes
         run: |
@@ -35,9 +35,9 @@ jobs:
           # Pull latest changes from remote to avoid conflicts
           git pull origin main --rebase
 
-          # Check if job_post_url.txt has changes
-          if ! git diff --quiet job_post_url.txt; then
-            git add job_post_url.txt
-            git commit -m "Auto-update job_post_url.txt"
+          # Check if job_post_url.txt or job_summary.json has changes
+          if ! git diff --quiet job_post_url.txt job_summary.json; then
+            git add job_post_url.txt job_summary.json
+            git commit -m "Auto-update job_post_url.txt and job_summary.json"
             git push origin main
           fi
