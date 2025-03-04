@@ -1,0 +1,43 @@
+name: Daily API Key Rotation Job
+
+on:
+  schedule:
+    - cron: "1 0 * * *"  # Runs daily at midnight UTC
+  workflow_dispatch:  # Allows manual execution
+
+jobs:
+  fetch-company-names:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run API Key Rotation Script
+        env:
+          API_KEYS: ${{ secrets.API_KEYS }}
+          CSE_CONFIG: ${{ secrets.CSE_CONFIG }}
+        run: python script.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          # Pull latest changes from remote to avoid conflicts
+          git pull origin main --rebase
+
+          # Check if job_post_url.txt has changes
+          if ! git diff --quiet job_post_url.txt; then
+            git add job_post_url.txt
+            git commit -m "Auto-update job_post_url.txt"
+            git push origin main
+          fi
