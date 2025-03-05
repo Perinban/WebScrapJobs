@@ -54,8 +54,14 @@ jobs:
       - name: Commit and Push Job Details
         if: ${{ github.event.inputs.scraper == 'details' || github.event.inputs.scraper == 'both' }}
         run: |
+      - name: Commit and Push Job Details
+        if: ${{ github.event.inputs.scraper == 'details' || github.event.inputs.scraper == 'both' }}
+        run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
+
+          # Stash any unstaged changes
+          git diff --quiet || git stash -u
 
           # Pull latest changes with rebase
           git pull origin main --rebase
@@ -77,6 +83,9 @@ jobs:
               git add job_summary_bkp.json
               git commit -m "Create job_summary_bkp.json from job_summary.json"
           fi
+
+          # Apply stashed changes, if any
+          git stash pop || true
 
           # Push all changes
           git push origin main
