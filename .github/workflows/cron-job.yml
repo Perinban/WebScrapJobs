@@ -1,4 +1,4 @@
-name: Daily Web Scrap
+name: Daily Web Scrape
 
 on:
   schedule:
@@ -57,12 +57,29 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          # Pull latest changes from remote to avoid conflicts
           git pull origin main --rebase
-
+          
           # Check if job_summary.json has changes
           if ! git diff --quiet job_summary.json; then
-            git add job_summary.json
-            git commit -m "Auto-update job_summary.json"
-            git push origin main
+              # Add job_summary.json to the staging area
+              git add job_summary.json
+              # Commit changes with a message
+              git commit -m "Auto-update job_summary.json"
+              # Push changes to the remote repository
+              git push origin main
+          fi
+          
+          # Check if job_summary_bkp.json exists locally
+          if [ -f "job_summary_bkp.json" ]; then
+              # If job_summary_bkp.json exists, check for changes
+              if ! git diff --quiet job_summary_bkp.json; then
+                  git add job_summary_bkp.json
+                  git commit -m "Auto-update job_summary_bkp.json"
+                  git push origin main
+              fi
+          else
+              cp job_summary.json job_summary_bkp.json
+              git add job_summary_bkp.json
+              git commit -m "Create job_summary_bkp.json from job_summary.json"
+              git push origin main
           fi

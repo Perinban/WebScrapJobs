@@ -159,15 +159,41 @@ if __name__ == "__main__":
     # Run the asynchronous job processing function
     job_summary = asyncio.run(process_all_urls(job_post_url))
 
-    # ========================= Define GitHub Raw URL =========================
-    raw_url = "https://raw.githubusercontent.com/Perinban/WebScrapJobs/main/job_summary.json"
+    # Define Local File Paths
+    job_summary_file_path = "job_summary.json"
+    backup_file_path = "job_summary_bkp.json"
 
-    # ========================= Overwrite with New Job Summary Data =========================
-    update_response = requests.put(raw_url, data=json.dumps(job_summary, indent=4, ensure_ascii=False))
-
-    # Check for success in updating
+    # ========================= Save New Job Summary Data =========================
     try:
-        update_response.raise_for_status()  # Raise an exception if the response status is not OK
-        print("New job summary saved successfully to GitHub.")
-    except requests.RequestException as e:
-        print(f"Failed to save new job summary to GitHub: {e}")
+        # Write only the new job summary to job_summary.json
+        with open(job_summary_file_path, 'w', encoding='utf-8') as file:
+            json.dump(job_summary, file, indent=4, ensure_ascii=False)
+        print("New job summary saved successfully to the local job_summary.json file.")
+    except Exception as e:
+        print(f"Failed to save new job summary to the local file: {e}")
+
+    # ========================= Backup Existing and New Data =========================
+    if os.path.exists(job_summary_file_path):
+        try:
+            # Read the current data from job_summary.json (if exists)
+            with open(job_summary_file_path, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+
+            # Combine existing data with the new job summary data
+            combined_data = existing_data + job_summary
+
+            # Write the combined data to job_summary_bkp.json
+            with open(backup_file_path, 'w', encoding='utf-8') as f:
+                json.dump(combined_data, f, indent=4, ensure_ascii=False)
+
+            print("Backup of current and new job summary data saved successfully to job_summary_bkp.json.")
+        except Exception as e:
+            print(f"Failed to create backup of job summary data: {e}")
+    else:
+        # If the file doesn't exist, just create the backup with the new data
+        try:
+            with open(backup_file_path, 'w', encoding='utf-8') as f:
+                json.dump(job_summary, f, indent=4, ensure_ascii=False)
+            print("Job summary file created and backup saved to job_summary_bkp.json.")
+        except Exception as e:
+            print(f"Failed to create and save backup job summary file: {e}")
