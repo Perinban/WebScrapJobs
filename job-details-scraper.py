@@ -6,16 +6,16 @@ import nest_asyncio
 from bs4 import BeautifulSoup
 import aiohttp
 
-# ========================= Save Extracted Job Links to File =========================
-# Open a file in write mode to store the extracted job links
-with open("https://raw.githubusercontent.com/Perinban/WebScrapJobs/main/job_post_url.txt", "w") as file:
-    # Write each job URL to the file, one per line
-    for url in job_post_url:
-        file.write(url + "\n")
+# ========================= Fetch Job URLs =========================
+# Send a GET request to fetch the job URLs
+response = requests.get("https://raw.githubusercontent.com/Perinban/WebScrapJobs/main/job_post_url.txt")
 
-# ========================= Confirmation of File Saving =========================
-# Print confirmation message indicating that job URLs were saved successfully
-print("Job post URLs saved successfully.")
+# Check if the request was successful
+if response.status_code == 200:
+    # Assign the content to job_post_url by splitting the response into lines
+    job_post_url = response.text.splitlines()
+else:
+    print("Failed to retrieve the job URLs.")
 
 # Apply nest_asyncio to handle nested event loops, useful in interactive environments like Jupyter notebooks
 nest_asyncio.apply()

@@ -86,6 +86,7 @@ def scrape_company(company_name):
 job_post_url = []
 
 JOB_POST_URL_SOURCE = "https://raw.githubusercontent.com/Perinban/WebScrapJobs/main/job_post_url.txt"
+
 try:
     response = requests.get(JOB_POST_URL_SOURCE, timeout=10)
     response.raise_for_status()
