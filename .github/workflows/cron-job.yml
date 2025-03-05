@@ -57,36 +57,26 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          # Stash any local changes before pulling
-          git stash -u
-
-          # Pull with rebase
+          # Pull latest changes with rebase
           git pull origin main --rebase
-          
+
           # Check if job_summary.json has changes
           if ! git diff --quiet job_summary.json; then
-              # Add job_summary.json to the staging area
               git add job_summary.json
-              # Commit changes with a message
               git commit -m "Auto-update job_summary.json"
-              # Push changes to the remote repository
-              git push origin main
           fi
-          
-          # Check if job_summary_bkp.json exists locally
+
+          # Handle job_summary_bkp.json
           if [ -f "job_summary_bkp.json" ]; then
-              # If job_summary_bkp.json exists, check for changes
               if ! git diff --quiet job_summary_bkp.json; then
                   git add job_summary_bkp.json
                   git commit -m "Auto-update job_summary_bkp.json"
-                  git push origin main
               fi
           else
               cp job_summary.json job_summary_bkp.json
               git add job_summary_bkp.json
               git commit -m "Create job_summary_bkp.json from job_summary.json"
-              git push origin main
           fi
 
-          # Apply stashed changes if any
-          git stash pop || echo "No changes to restore"
+          # Push all changes
+          git push origin main
