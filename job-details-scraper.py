@@ -159,30 +159,12 @@ if __name__ == "__main__":
     # Run the asynchronous job processing function
     job_summary = asyncio.run(process_all_urls(job_post_url))
 
-    # ========================= Fetch Existing Data from GitHub =========================
-    existing_data = []
+    # ========================= Overwrite with New Job Summary Data =========================
+    update_response = requests.put(raw_url, data=json.dumps(job_summary, indent=4, ensure_ascii=False))
 
-    raw_url = "https://raw.githubusercontent.com/Perinban/WebScrapJobs/main/job_summary.json"
-    response = requests.get(raw_url)
-    if response.status_code == 200:
-        existing_data = response.json()
-
-        # ========================= Save Only New Job Summary Data =========================
-        # Filter out any duplicate URLs
-        new_job_summary = [job for job in job_summary if job["Job_URL"] not in [existing_job["Job_URL"] for existing_job in existing_data]]
-
-        # Append the new data
-        if new_job_summary:
-            existing_data.extend(new_job_summary)
-            update_response = requests.put(raw_url, data=json.dumps(existing_data, indent=4, ensure_ascii=False))
-
-            # Check for success in updating
-            try:
-                update_response.raise_for_status()  # Will raise an exception if the response status is not OK
-                print("New job summary saved successfully to GitHub.")
-            except requests.RequestException as e:
-                print(f"Failed to save new job summary to GitHub: {e}")
-        else:
-            print("No new job posts to add.")
-    else:
-        print(f"Failed to fetch data from GitHub: {response.status_code}")
+    # Check for success in updating
+    try:
+        update_response.raise_for_status()  # Raise an exception if the response status is not OK
+        print("New job summary saved successfully to GitHub.")
+    except requests.RequestException as e:
+        print(f"Failed to save new job summary to GitHub: {e}")
