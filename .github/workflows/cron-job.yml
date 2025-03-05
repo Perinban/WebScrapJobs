@@ -63,9 +63,6 @@ jobs:
           # Stash any unstaged changes
           git diff --quiet || git stash -u
 
-          # Pull latest changes with rebase
-          git pull origin main --rebase
-
           # Check if job_summary.json has changes
           if ! git diff --quiet job_summary.json; then
               git add job_summary.json
@@ -83,6 +80,9 @@ jobs:
               git add job_summary_bkp.json
               git commit -m "Create job_summary_bkp.json from job_summary.json"
           fi
+          
+          # Pull latest changes with rebase
+          git pull origin main --rebase
 
           # Apply stashed changes, if any
           git stash pop || true
