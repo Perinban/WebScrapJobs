@@ -159,6 +159,9 @@ if __name__ == "__main__":
     # Run the asynchronous job processing function
     job_summary = asyncio.run(process_all_urls(job_post_url))
 
+    # ========================= Define GitHub Raw URL =========================
+    raw_url = "https://raw.githubusercontent.com/Perinban/WebScrapJobs/main/job_summary.json"
+
     # ========================= Overwrite with New Job Summary Data =========================
     update_response = requests.put(raw_url, data=json.dumps(job_summary, indent=4, ensure_ascii=False))
 
