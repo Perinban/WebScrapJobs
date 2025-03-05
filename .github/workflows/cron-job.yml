@@ -54,15 +54,11 @@ jobs:
       - name: Commit and Push Job Details
         if: ${{ github.event.inputs.scraper == 'details' || github.event.inputs.scraper == 'both' }}
         run: |
-      - name: Commit and Push Job Details
-        if: ${{ github.event.inputs.scraper == 'details' || github.event.inputs.scraper == 'both' }}
-        run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
           if ! git diff --quiet job_summary.json || ! git diff --quiet job_summary_bkp.json; then
             git add job_summary.json job_summary_bkp.json
-            git pull origin main --rebase
             git commit -m "Auto-update job_summary.json and job_summary_bkp.json"
             git push origin main
           fi
