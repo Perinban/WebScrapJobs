@@ -5,6 +5,7 @@ import requests
 import nest_asyncio
 from bs4 import BeautifulSoup
 import aiohttp
+import os
 
 # ========================= Fetch Job URLs =========================
 # Send a GET request to fetch the job URLs
@@ -154,46 +155,49 @@ async def process_all_urls(urls):
 
     return results
 
-# ========================= Main Execution =========================
 if __name__ == "__main__":
     # Run the asynchronous job processing function
     job_summary = asyncio.run(process_all_urls(job_post_url))
 
-    # Define Local File Paths
+    # Define file paths
     job_summary_file_path = "job_summary.json"
     backup_file_path = "job_summary_bkp.json"
 
     # ========================= Save New Job Summary Data =========================
     try:
-        # Write only the new job summary to job_summary.json
         with open(job_summary_file_path, 'w', encoding='utf-8') as file:
             json.dump(job_summary, file, indent=4, ensure_ascii=False)
-        print("New job summary saved successfully to the local job_summary.json file.")
+        print("New job summary saved successfully.")
     except Exception as e:
-        print(f"Failed to save new job summary to the local file: {e}")
+        print(f"Failed to save new job summary: {e}")
 
     # ========================= Backup Existing and New Data =========================
-    if os.path.exists(job_summary_file_path):
-        try:
-            # Read the current data from job_summary.json (if exists)
-            with open(job_summary_file_path, 'r', encoding='utf-8') as f:
-                existing_data = json.load(f)
+    try:
+        if os.path.exists(backup_file_path):
+            # Read existing backup data
+            with open(backup_file_path, 'r', encoding='utf-8') as f:
+                try:
+                    existing_backup = json.load(f)
+                except json.JSONDecodeError:
+                    print("Warning: Backup file is corrupted. Creating a new one.")
+                    existing_backup = []
+        else:
+            existing_backup = []
 
-            # Combine existing data with the new job summary data
-            combined_data = existing_data + job_summary
+        # Ensure existing backup and new data are lists
+        if isinstance(existing_backup, dict):
+            existing_backup = [existing_backup]
+        if isinstance(job_summary, dict):
+            job_summary = [job_summary]
 
-            # Write the combined data to job_summary_bkp.json
-            with open(backup_file_path, 'w', encoding='utf-8') as f:
-                json.dump(combined_data, f, indent=4, ensure_ascii=False)
+        # Merge existing backup with new data
+        combined_data = existing_backup + job_summary
 
-            print("Backup of current and new job summary data saved successfully to job_summary_bkp.json.")
-        except Exception as e:
-            print(f"Failed to create backup of job summary data: {e}")
-    else:
-        # If the file doesn't exist, just create the backup with the new data
-        try:
-            with open(backup_file_path, 'w', encoding='utf-8') as f:
-                json.dump(job_summary, f, indent=4, ensure_ascii=False)
-            print("Job summary file created and backup saved to job_summary_bkp.json.")
-        except Exception as e:
-            print(f"Failed to create and save backup job summary file: {e}")
+        # Save to backup file
+        with open(backup_file_path, 'w', encoding='utf-8') as f:
+            json.dump(combined_data, f, indent=4, ensure_ascii=False)
+
+        print("Backup updated successfully.")
+
+    except Exception as e:
+        print(f"Failed to update backup: {e}")
