@@ -171,7 +171,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Failed to save new job summary: {e}")
 
-    # ========================= Backup Existing and New Data =========================
+    # ========================= Backup Existing and New Data with Duplicate Removal =========================
     try:
         if os.path.exists(backup_file_path):
             # Read existing backup data
@@ -193,9 +193,18 @@ if __name__ == "__main__":
         # Merge existing backup with new data
         combined_data = existing_backup + job_summary
 
+        # Remove duplicates based on all fields
+        seen_entries = set()
+        unique_data = []
+        for entry in combined_data:
+            entry_hashable = make_hashable(entry)
+            if entry_hashable not in seen_entries:
+                unique_data.append(entry)
+                seen_entries.add(entry_hashable)
+
         # Save to backup file
         with open(backup_file_path, 'w', encoding='utf-8') as f:
-            json.dump(combined_data, f, indent=4, ensure_ascii=False)
+            json.dump(unique_data, f, indent=4, ensure_ascii=False)
 
         print("Backup updated successfully.")
 
