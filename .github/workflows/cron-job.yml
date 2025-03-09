@@ -27,6 +27,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'url' || github.event.inputs.scraper == 'both' }}  # Run only for 'url' or 'both'
     concurrency:
       group: "fetch-job-urls-${{ github.ref }}"
+      cancel-in-progress: false  # Ensure this job waits for the previous one if it's running
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -59,22 +60,24 @@ jobs:
           python job_summary_splitter.py
 
       - name: Upload Job URL Chunks as Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: job-urls
           path: job_urls_*.json
+          compression-level: 6
 
   fetch-job-details:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'details' || github.event.inputs.scraper == 'both' }}  # Run if 'details' or 'both' is selected
     concurrency:
       group: "fetch-job-details-${{ github.ref }}"
+      cancel-in-progress: false  # Ensure this job waits for the previous one if it's running
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Download Job URL Chunks
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: job-urls
           path: .
@@ -97,23 +100,25 @@ jobs:
           done
 
       - name: Upload Job Summary Files as Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: job-summaries
           path: job_summary_*.json
+          compression-level: 6
 
   combine-and-upload:
     runs-on: ubuntu-latest
     needs: fetch-job-details  # Ensure this job waits for 'fetch-job-details' to finish
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.combine_upload == 'yes' }}
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.combine_upload == 'yes' }}  # Trigger only if combine_upload is 'yes'
     concurrency:
       group: "combine-and-upload-${{ github.ref }}"
+      cancel-in-progress: false  # Ensure this job waits for the previous one if it's running
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Download Job Summary Files
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: job-summaries
           path: .
