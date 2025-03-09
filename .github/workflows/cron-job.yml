@@ -70,7 +70,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'details' || github.event.inputs.scraper == 'both' }}  # Run if 'details' or 'both' is selected
     concurrency:
       group: "fetch-job-details-${{ github.ref }}"
-    needs: ${{ github.event.inputs.scraper == 'both' && 'fetch-job-urls' || '' }}  # Only depends on fetch-job-urls if 'both' is selected
+    needs: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'both' && 'fetch-job-urls' || '' }}  # Conditional dependency
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -109,7 +109,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.combine_upload == 'yes' }}
     concurrency:
       group: "combine-and-upload-${{ github.ref }}"
-    needs: ${{ github.event.inputs.scraper == 'both' && github.event.inputs.combine_upload == 'yes' && 'fetch-job-details' || '' }}  # Depends on 'fetch-job-details' if 'both' and 'yes' are selected
+    needs: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'both' && 'fetch-job-details' || '' }}  # Conditional dependency
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
