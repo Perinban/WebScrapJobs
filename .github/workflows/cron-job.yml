@@ -13,6 +13,7 @@ on:
           - "url"
           - "details"
           - "both"
+          - "dummy"
       combine_upload:
         description: "Choose whether to combine and upload job summaries"
         required: true
@@ -27,7 +28,6 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'url' || github.event.inputs.scraper == 'both' }}  # Run only for 'url' or 'both'
     concurrency:
       group: "fetch-job-urls-${{ github.ref }}"
-      cancel-in-progress: false  # Ensure this job waits for the previous one if it's running
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -64,14 +64,13 @@ jobs:
         with:
           name: job-urls
           path: job_urls_*.json
-          compression-level: 6
 
   fetch-job-details:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'details' || github.event.inputs.scraper == 'both' }}  # Run if 'details' or 'both' is selected
     concurrency:
       group: "fetch-job-details-${{ github.ref }}"
-      cancel-in-progress: false  # Ensure this job waits for the previous one if it's running
+    needs: ${{ github.event.inputs.scraper == 'both' && 'fetch-job-urls' || '' }}  # Only depends on fetch-job-urls if 'both' is selected
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -104,15 +103,13 @@ jobs:
         with:
           name: job-summaries
           path: job_summary_*.json
-          compression-level: 6
 
   combine-and-upload:
     runs-on: ubuntu-latest
-    needs: fetch-job-details  # Ensure this job waits for 'fetch-job-details' to finish
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.combine_upload == 'yes' }}  # Trigger only if combine_upload is 'yes'
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.combine_upload == 'yes' }}
     concurrency:
       group: "combine-and-upload-${{ github.ref }}"
-      cancel-in-progress: false  # Ensure this job waits for the previous one if it's running
+    needs: ${{ github.event.inputs.scraper == 'both' && github.event.inputs.combine_upload == 'yes' && 'fetch-job-details' || '' }}  # Depends on 'fetch-job-details' if 'both' and 'yes' are selected
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
