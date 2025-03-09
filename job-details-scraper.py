@@ -161,7 +161,6 @@ if __name__ == "__main__":
 
     # Define file paths
     job_summary_file_path = "job_summary.json"
-    backup_file_path = "job_summary_bkp.json"
 
     # ========================= Save New Job Summary Data =========================
     try:
@@ -170,43 +169,3 @@ if __name__ == "__main__":
         print("New job summary saved successfully.")
     except Exception as e:
         print(f"Failed to save new job summary: {e}")
-
-    # ========================= Backup Existing and New Data with Duplicate Removal =========================
-    try:
-        if os.path.exists(backup_file_path):
-            # Read existing backup data
-            with open(backup_file_path, 'r', encoding='utf-8') as f:
-                try:
-                    existing_backup = json.load(f)
-                except json.JSONDecodeError:
-                    print("Warning: Backup file is corrupted. Creating a new one.")
-                    existing_backup = []
-        else:
-            existing_backup = []
-
-        # Ensure existing backup and new data are lists
-        if isinstance(existing_backup, dict):
-            existing_backup = [existing_backup]
-        if isinstance(job_summary, dict):
-            job_summary = [job_summary]
-
-        # Merge existing backup with new data
-        combined_data = existing_backup + job_summary
-
-        # Remove duplicates based on all fields
-        seen_entries = set()
-        unique_data = []
-        for entry in combined_data:
-            entry_hashable = make_hashable(entry)
-            if entry_hashable not in seen_entries:
-                unique_data.append(entry)
-                seen_entries.add(entry_hashable)
-
-        # Save to backup file
-        with open(backup_file_path, 'w', encoding='utf-8') as f:
-            json.dump(unique_data, f, indent=4, ensure_ascii=False)
-
-        print("Backup updated successfully.")
-
-    except Exception as e:
-        print(f"Failed to update backup: {e}")
