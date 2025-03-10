@@ -55,7 +55,7 @@ jobs:
           if ! git diff --quiet job_post_url.txt; then
             git add job_post_url.txt
             git commit -m "Auto-update job_post_url.txt"
-            git push origin main
+            git push origin main || echo "Push failed, possibly due to conflicts or branch protection."
           fi
 
       - name: Split Job URLs into Chunks
@@ -95,6 +95,10 @@ jobs:
         id: list_files
         run: |
           files=$(ls job_urls_*.json | jq -R -s -c 'split("\n")[:-1]')
+          if [ -z "$files" ]; then
+            echo "No job URL chunks found"
+            exit 1
+          fi
           echo "files=$files" >> $GITHUB_ENV
           echo "::set-output name=files::$files"
 
@@ -137,7 +141,7 @@ jobs:
 
   combine-and-upload:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || (github.event.inputs.scraper == 'both') }}
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'both' }}
     concurrency:
       group: "combine-and-upload-${{ github.ref }}"
     needs: run-job-details
@@ -165,7 +169,12 @@ jobs:
       - name: Upload to Google Drive
         env:
           GDRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY }}
-        run: python upload-to-gdrive.py
+        run: |
+          if [ -z "$GDRIVE_SERVICE_ACCOUNT_KEY" ]; then
+            echo "GDRIVE_SERVICE_ACCOUNT_KEY is not set"
+            exit 1
+          fi
+          python upload-to-gdrive.py
 
   manual-fetch-job-urls:
     runs-on: ubuntu-latest
@@ -199,7 +208,7 @@ jobs:
           if ! git diff --quiet job_post_url.txt; then
             git add job_post_url.txt
             git commit -m "Auto-update job_post_url.txt"
-            git push origin main
+            git push origin main || echo "Push failed, possibly due to conflicts or branch protection."
           fi
 
       - name: Split Job URLs into Chunks
@@ -238,6 +247,10 @@ jobs:
         id: list_files
         run: |
           files=$(ls job_urls_*.json | jq -R -s -c 'split("\n")[:-1]')
+          if [ -z "$files" ]; then
+            echo "No job URL chunks found"
+            exit 1
+          fi
           echo "files=$files" >> $GITHUB_ENV
           echo "::set-output name=files::$files"
 
@@ -307,4 +320,9 @@ jobs:
       - name: Upload to Google Drive
         env:
           GDRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY }}
-        run: python upload-to-gdrive.py
+        run: |
+          if [ -z "$GDRIVE_SERVICE_ACCOUNT_KEY" ]; then
+            echo "GDRIVE_SERVICE_ACCOUNT_KEY is not set"
+            exit 1
+          fi
+          python upload-to-gdrive.py
