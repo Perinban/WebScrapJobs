@@ -56,8 +56,7 @@ jobs:
           fi
 
       - name: Split Job URLs into Chunks
-        run: |
-          python job_summary_splitter.py
+        run: python job-summary-splitter.py
 
       - name: Upload Job URL Chunks as Artifacts
         uses: actions/upload-artifact@v4
@@ -130,11 +129,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Combine Job Summary Files
-        run: |
-          python combine-job-summaries.py
+        run: python combine-job-summaries.py
 
       - name: Upload to Google Drive
         env:
           GDRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY }}
-        run: |
-          python upload-to-gdrive.py
+        run: python upload-to-gdrive.py
