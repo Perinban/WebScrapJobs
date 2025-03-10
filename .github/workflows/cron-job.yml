@@ -126,7 +126,7 @@ jobs:
 
       - name: Run Job Details Scraper
         run: |
-          chunk_number="${{ matrix.file//[^0-9]/ }}"
+          chunk_number=$(echo "${{ matrix.file }}" | grep -o '[0-9]\+')
           output_file="job_summary_${chunk_number}.json"
           if ! python job-details-scraper.py "${{ matrix.file }}" "$output_file"; then
             echo "Job details scraper failed"
@@ -278,7 +278,7 @@ jobs:
 
       - name: Run Job Details Scraper
         run: |
-          chunk_number="${{ matrix.file//[^0-9]/ }}"
+          chunk_number=$(echo "${{ matrix.file }}" | grep -o '[0-9]\+')
           output_file="job_summary_${chunk_number}.json"
           if ! python job-details-scraper.py "${{ matrix.file }}" "$output_file"; then
             echo "Job details scraper failed"
