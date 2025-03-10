@@ -25,7 +25,7 @@ on:
 jobs:
   fetch-job-urls:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'url' || github.event.inputs.scraper == 'both' }}  # Run only for 'url' or 'both'
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'both' }}
     concurrency:
       group: "fetch-job-urls-${{ github.ref }}"
     steps:
@@ -66,7 +66,7 @@ jobs:
 
   fetch-job-details:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'details' || github.event.inputs.scraper == 'both' }}  # Run if 'details' or 'both' is selected
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'both' }}
     concurrency:
       group: "fetch-job-details-${{ github.ref }}"
     needs: fetch-job-urls
@@ -88,14 +88,41 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
+      - name: List Job URL Chunks
+        id: list_files
+        run: |
+          # Dynamically find all job_urls_*.json files and list them
+          files=$(ls job_urls_*.json)
+          echo "files=$files" >> $GITHUB_ENV
+          echo "::set-output name=files::$(echo $files | tr ' ' ',')"  # Convert to CSV for matrix
+
+  run-job-details:
+    needs: fetch-job-details
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'both' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        file: ${{fromJson(needs.fetch-job-details.outputs.files)}}
+      max-parallel: 3
+    concurrency:
+      group: "run-job-details-${{ github.ref }}"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
       - name: Run Job Details Scraper
         run: |
-          # Dynamically find all job_urls_*.json files and process them
-          for file in job_urls_*.json; do
-            chunk_number="${file//[^0-9]/}"  # Extract chunk number from file name
-            output_file="job_summary_${chunk_number}.json"
-            python job-details-scraper.py "$file" "$output_file"
-          done
+          chunk_number="${{ matrix.file//[^0-9]/ }}"  # Extract chunk number from file name
+          output_file="job_summary_${chunk_number}.json"
+          python job-details-scraper.py "${{ matrix.file }}" "$output_file"
 
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
@@ -105,10 +132,148 @@ jobs:
 
   combine-and-upload:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.combine_upload == 'yes' }}
+    if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'both' }}
     concurrency:
       group: "combine-and-upload-${{ github.ref }}"
     needs: fetch-job-details
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Job Summary Files
+        uses: actions/download-artifact@v4
+        with:
+          name: job-summaries
+          path: .
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Combine Job Summary Files
+        run: python combine-job-summaries.py
+
+      - name: Upload to Google Drive
+        env:
+          GDRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY }}
+        run: python upload-to-gdrive.py
+
+  manual-fetch-job-urls:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scraper == 'url' }}
+    concurrency:
+      group: "fetch-job-urls-${{ github.ref }}"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Job URL Scraper
+        run: python script.py
+
+      - name: Commit and Push Job URLs
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          # Check if job_post_url.txt has changes
+          if ! git diff --quiet job_post_url.txt; then
+            git add job_post_url.txt
+            git commit -m "Auto-update job_post_url.txt"
+            git push origin main
+          fi
+
+      - name: Split Job URLs into Chunks
+        run: python job-summary-splitter.py
+
+      - name: Upload Job URL Chunks as Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-urls
+          path: job_urls_*.json
+
+  manual-fetch-job-details:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scraper == 'details' }}
+    concurrency:
+      group: "fetch-job-details-${{ github.ref }}"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Job URL Chunks
+        uses: actions/download-artifact@v4
+        with:
+          name: job-urls
+          path: .
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: List Job URL Chunks
+        id: list_files
+        run: |
+          # Dynamically find all job_urls_*.json files and list them
+          files=$(ls job_urls_*.json)
+          echo "files=$files" >> $GITHUB_ENV
+          echo "::set-output name=files::$(echo $files | tr ' ' ',')"  # Convert to CSV for matrix
+
+  manual-run-job-details:
+    needs: manual-fetch-job-details
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scraper == 'details'}}
+    strategy:
+      matrix:
+        file: ${{fromJson(needs.fetch-job-details.outputs.files)}}
+      max-parallel: 3
+    concurrency:
+      group: "run-job-details-${{ github.ref }}"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Job Details Scraper
+        run: |
+          chunk_number="${{ matrix.file//[^0-9]/ }}"  # Extract chunk number from file name
+          output_file="job_summary_${chunk_number}.json"
+          python job-details-scraper.py "${{ matrix.file }}" "$output_file"
+
+      - name: Upload Job Summary Files as Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: job-summaries
+          path: job_summary_*.json
+
+  manual-combine-and-upload:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.combine_upload == 'yes' }}
+    concurrency:
+      group: "combine-and-upload-${{ github.ref }}"
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
