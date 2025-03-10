@@ -66,7 +66,6 @@ jobs:
         with:
           name: job-urls
           path: job_urls_*.json
-        retention-days: 1
 
   fetch-job-details:
     runs-on: ubuntu-latest
@@ -139,7 +138,6 @@ jobs:
         with:
           name: job-summaries
           path: job_summary_*.json
-        retention-days: 1
 
   combine-and-upload:
     runs-on: ubuntu-latest
@@ -221,7 +219,6 @@ jobs:
         with:
           name: job-urls
           path: job_urls_*.json
-        retention-days: 1
 
   manual-fetch-job-details:
     runs-on: ubuntu-latest
@@ -293,7 +290,6 @@ jobs:
         with:
           name: job-summaries
           path: job_summary_*.json
-        retention-days: 1
 
   manual-combine-and-upload:
     runs-on: ubuntu-latest
