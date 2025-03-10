@@ -41,14 +41,17 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run Job URL Scraper
-        run: python script.py
+        run: |
+          if ! python script.py; then
+            echo "Job URL scraper failed"
+            exit 1
+          fi
 
       - name: Commit and Push Job URLs
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           
-          # Check if job_post_url.txt has changes
           if ! git diff --quiet job_post_url.txt; then
             git add job_post_url.txt
             git commit -m "Auto-update job_post_url.txt"
@@ -91,10 +94,9 @@ jobs:
       - name: List Job URL Chunks
         id: list_files
         run: |
-          # Dynamically find all job_urls_*.json files and list them
-          files=$(ls job_urls_*.json)
+          files=$(ls job_urls_*.json | jq -R -s -c 'split("\n")[:-1]')
           echo "files=$files" >> $GITHUB_ENV
-          echo "::set-output name=files::$(echo $files | tr ' ' ',')"  # Convert to CSV for matrix
+          echo "::set-output name=files::$files"
 
   run-job-details:
     needs: fetch-job-details
@@ -102,7 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        file: ${{fromJson(needs.fetch-job-details.outputs.files)}}
+        file: ${{ fromJson(needs.fetch-job-details.outputs.files) }}
       max-parallel: 3
     concurrency:
       group: "run-job-details-${{ github.ref }}"
@@ -120,9 +122,12 @@ jobs:
 
       - name: Run Job Details Scraper
         run: |
-          chunk_number="${{ matrix.file//[^0-9]/ }}"  # Extract chunk number from file name
+          chunk_number="${{ matrix.file//[^0-9]/ }}"
           output_file="job_summary_${chunk_number}.json"
-          python job-details-scraper.py "${{ matrix.file }}" "$output_file"
+          if ! python job-details-scraper.py "${{ matrix.file }}" "$output_file"; then
+            echo "Job details scraper failed"
+            exit 1
+          fi
 
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
@@ -132,10 +137,10 @@ jobs:
 
   combine-and-upload:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'both' }}
+    if: ${{ github.event_name == 'schedule' || (github.event.inputs.scraper == 'both') }}
     concurrency:
       group: "combine-and-upload-${{ github.ref }}"
-    needs: fetch-job-details
+    needs: run-job-details
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -152,8 +157,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install Dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Combine Job Summary Files
         run: python combine-job-summaries.py
@@ -181,14 +185,17 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run Job URL Scraper
-        run: python script.py
+        run: |
+          if ! python script.py; then
+            echo "Job URL scraper failed"
+            exit 1
+          fi
 
       - name: Commit and Push Job URLs
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          # Check if job_post_url.txt has changes
           if ! git diff --quiet job_post_url.txt; then
             git add job_post_url.txt
             git commit -m "Auto-update job_post_url.txt"
@@ -230,18 +237,17 @@ jobs:
       - name: List Job URL Chunks
         id: list_files
         run: |
-          # Dynamically find all job_urls_*.json files and list them
-          files=$(ls job_urls_*.json)
+          files=$(ls job_urls_*.json | jq -R -s -c 'split("\n")[:-1]')
           echo "files=$files" >> $GITHUB_ENV
-          echo "::set-output name=files::$(echo $files | tr ' ' ',')"  # Convert to CSV for matrix
+          echo "::set-output name=files::$files"
 
   manual-run-job-details:
     needs: manual-fetch-job-details
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.scraper == 'details'}}
+    if: ${{ github.event.inputs.scraper == 'details' }}
     strategy:
       matrix:
-        file: ${{fromJson(needs.fetch-job-details.outputs.files)}}
+        file: ${{ fromJson(needs.manual-fetch-job-details.outputs.files) }}
       max-parallel: 3
     concurrency:
       group: "run-job-details-${{ github.ref }}"
@@ -259,9 +265,12 @@ jobs:
 
       - name: Run Job Details Scraper
         run: |
-          chunk_number="${{ matrix.file//[^0-9]/ }}"  # Extract chunk number from file name
+          chunk_number="${{ matrix.file//[^0-9]/ }}"
           output_file="job_summary_${chunk_number}.json"
-          python job-details-scraper.py "${{ matrix.file }}" "$output_file"
+          if ! python job-details-scraper.py "${{ matrix.file }}" "$output_file"; then
+            echo "Job details scraper failed"
+            exit 1
+          fi
 
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
@@ -290,8 +299,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install Dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Combine Job Summary Files
         run: python combine-job-summaries.py
