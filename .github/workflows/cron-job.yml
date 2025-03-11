@@ -147,6 +147,7 @@ jobs:
 
       - name: Unzip Job Summary Files
         run: |
+          /home/runner/work/WebScrapJobs/WebScrapJobs/
           mkdir -p job_summary_files
           unzip ./job-summaries/job-summaries.zip -d job_summary_files
 
@@ -285,6 +286,7 @@ jobs:
 
       - name: Unzip Job Summary Files
         run: |
+          cd /home/runner/work/WebScrapJobs/WebScrapJobs/
           mkdir -p job_summary_files
           unzip ./job-summaries/job-summaries.zip -d job_summary_files
 
