@@ -74,7 +74,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: job-urls
-          path: .
+          path: ./job-urls
 
       - name: Set Up Python
         uses: actions/setup-python@v5
@@ -135,7 +135,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: job-summaries
-          path: .
+          path: ./job-summaries
 
       - name: Set Up Python
         uses: actions/setup-python@v5
@@ -213,7 +213,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: job-urls
-          path: .
+          path: ./job-urls
 
       - name: Set Up Python
         uses: actions/setup-python@v5
@@ -273,7 +273,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: job-summaries
-          path: .
+          path: ./job-summaries
 
       - name: Set Up Python
         uses: actions/setup-python@v5

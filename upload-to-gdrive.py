@@ -3,8 +3,6 @@ import os
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-
-
 def upload_to_drive():
     # Load service account credentials
     service_account_info = json.loads(os.getenv('GDRIVE_SERVICE_ACCOUNT_KEY'))
