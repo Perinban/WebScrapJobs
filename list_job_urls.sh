@@ -4,7 +4,7 @@
 cd /home/runner/work/WebScrapJobs/WebScrapJobs/
 
 # Check if the zip file exists in the job-urls directory
-if [ ! -f "/job-urls/job-urls.zip" ]; then
+if [ ! -f "./job-urls/job-urls.zip" ]; then
   echo "job-urls.zip not found in the job-urls directory!"
   exit 1
 fi
