@@ -1,11 +1,12 @@
 import json
 import glob
+import os
 
 def combine_job_summaries():
     combined_data = []
 
-    # Iterate over all the job summary JSON files
-    for file in glob.glob('job_summary_*.json'):
+    # Iterate over all the job summary JSON files in the unzipped folder
+    for file in glob.glob('job_summary_files/job_summary_*.json'):
         with open(file, 'r', encoding='utf-8') as f:
             combined_data.extend(json.load(f))
 

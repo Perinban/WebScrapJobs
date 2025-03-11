@@ -49,14 +49,7 @@ jobs:
 
       - name: Commit and Push Job URLs
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          
-          if ! git diff --quiet job_post_url.txt; then
-            git add job_post_url.txt
-            git commit -m "Auto-update job_post_url.txt"
-            git push origin main || echo "Push failed, possibly due to conflicts or branch protection."
-          fi
+          ./update_job_url.sh
 
       - name: Split Job URLs into Chunks
         run: python job-summary-splitter.py
@@ -94,12 +87,7 @@ jobs:
       - name: List Job URL Chunks
         id: list_files
         run: |
-          files=$(ls job_urls_*.json | jq -R -s -c 'split("\n")[:-1] | map({"file": .})')
-          if [ "$files" == "[]" ]; then
-            echo "No job URL chunks found"
-            exit 1
-          fi
-          echo "files=$files" >> $GITHUB_OUTPUT
+          ./list_job_urls.sh
 
   run-job-details:
     needs: fetch-job-details
@@ -125,13 +113,7 @@ jobs:
 
       - name: Run Job Details Scraper
         run: |
-          file_name="${{ matrix.file.file }}"
-          chunk_number=$(echo "$file_name" | grep -oP '\d+')
-          output_file="job_summary_${chunk_number}.json"
-          if ! python job-details-scraper.py "$file_name" "$output_file"; then
-            echo "Job details scraper failed"
-            exit 1
-          fi
+          ./process_job_details.sh
 
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
@@ -162,6 +144,11 @@ jobs:
 
       - name: Install Dependencies
         run: pip install -r requirements.txt
+
+      - name: Unzip Job Summary Files
+        run: |
+          mkdir -p job_summary_files
+          unzip ./job-summaries/job-summaries.zip -d job_summary_files
 
       - name: Combine Job Summary Files
         run: python combine-job-summaries.py
@@ -202,14 +189,7 @@ jobs:
 
       - name: Commit and Push Job URLs
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-          if ! git diff --quiet job_post_url.txt; then
-            git add job_post_url.txt
-            git commit -m "Auto-update job_post_url.txt"
-            git push origin main || echo "Push failed, possibly due to conflicts or branch protection."
-          fi
+          ./update_job_url.sh
 
       - name: Split Job URLs into Chunks
         run: python job-summary-splitter.py
@@ -246,12 +226,7 @@ jobs:
       - name: List Job URL Chunks
         id: list_files
         run: |
-          files=$(ls job_urls_*.json | jq -R -s -c 'split("\n")[:-1] | map({"file": .})')
-          if [ "$files" == "[]" ]; then
-            echo "No job URL chunks found"
-            exit 1
-          fi
-          echo "files=$files" >> $GITHUB_OUTPUT
+          ./list_job_urls.sh
 
   manual-run-job-details:
     needs: manual-fetch-job-details
@@ -277,13 +252,7 @@ jobs:
 
       - name: Run Job Details Scraper
         run: |
-          file_name="${{ matrix.file.file }}"
-          chunk_number=$(echo "$file_name" | grep -oP '\d+')
-          output_file="job_summary_${chunk_number}.json"
-          if ! python job-details-scraper.py "$file_name" "$output_file"; then
-            echo "Job details scraper failed"
-            exit 1
-          fi
+          ./process_job_details.sh
 
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
@@ -313,6 +282,11 @@ jobs:
 
       - name: Install Dependencies
         run: pip install -r requirements.txt
+
+      - name: Unzip Job Summary Files
+        run: |
+          mkdir -p job_summary_files
+          unzip ./job-summaries/job-summaries.zip -d job_summary_files
 
       - name: Combine Job Summary Files
         run: python combine-job-summaries.py
