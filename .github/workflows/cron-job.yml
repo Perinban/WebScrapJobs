@@ -100,7 +100,7 @@ jobs:
 
       - name: Debug Matrix Files
         run: |
-          echo "Processing file: ${{ matrix.file }}"
+          echo "Processing file: ${{ matrix.file.file }}"
           
       - name: Set Up Python
         uses: actions/setup-python@v5
@@ -113,7 +113,7 @@ jobs:
       - name: Run Job Details Scraper
         run: |
           chmod +x ./process_job_details.sh
-          ./process_job_details.sh "${{ matrix.file }}"
+          ./process_job_details.sh "${{ matrix.file.file }}"
 
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
