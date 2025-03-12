@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e  # Exit on error
 
+#List files for debugging
+ls -R
+
 file_name="$1"  # Take the first command-line argument as file_name
 
 # Extract chunk number from the file name (assumes chunk_N.json format)
