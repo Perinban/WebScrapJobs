@@ -1,13 +1,27 @@
 #!/bin/bash
 # list_job_urls.sh
 
+echo "Listing all files..."
+ls -R
+
 cd /home/runner/work/WebScrapJobs/WebScrapJobs/
+
+# Debug: Print current working directory
+echo "Current working directory: $(pwd)"
+
+# Debug: Check if job-urls.zip exists
+echo "Checking for job-urls.zip in $(pwd)/job-urls..."
+ls -al ./job-urls
 
 # Check if the zip file exists in the job-urls directory
 if [ ! -f "./job-urls/job-urls.zip" ]; then
   echo "job-urls.zip not found in the job-urls directory!"
   exit 1
 fi
+
+# Debug: Check contents of job-urls.zip
+echo "Checking contents of job-urls.zip..."
+unzip -l ./job-urls/job-urls.zip
 
 # Unzip job-urls.zip into the current directory (or specific directory)
 echo "Unzipping job-urls.zip..."
@@ -19,9 +33,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# List the files in the job-urls directory after unzip
+# Debug: List files in job-urls directory after unzip
 echo "Listing files in job-urls directory:"
 ls -al ./job-urls
+
+# Debug: List JSON files explicitly
+echo "Listing JSON files in job-urls directory:"
+ls -al ./job-urls/job_urls*.json
 
 # Get all the JSON files from the job-urls directory and format them into JSON
 files=$(ls ./job-urls/job_urls*.json | jq -R -s -c 'split("\n")[:-1] | map({"file": .})')
