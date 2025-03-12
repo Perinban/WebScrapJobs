@@ -9,7 +9,7 @@ def upload_to_drive():
     credentials = service_account.Credentials.from_service_account_info(service_account_info)
     drive_service = build('drive', 'v3', credentials=credentials)
 
-    # Get Folder ID from environment variable
+    # Get Folder ID from env variable
     folder_id = os.getenv('GDRIVE_FOLDER_ID')
 
     # Upload the file
