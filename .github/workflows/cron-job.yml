@@ -66,6 +66,8 @@ jobs:
     concurrency:
       group: "fetch-job-details-${{ github.ref }}"
     needs: fetch-job-urls
+    outputs:
+      files: ${{ steps.list_files.outputs.files }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -79,6 +81,7 @@ jobs:
       - name: List Job URL Chunks
         id: list_files
         run: |
+          chmod +x ./list_job_urls.sh
           ./list_job_urls.sh
 
   run-job-details:
@@ -95,9 +98,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Debug Matrix Files
+        run: |
+          echo "Processing file: ${{ matrix.file }}"
+
       - name: Run Job Details Scraper
         run: |
-          ./process_job_details.sh
+          chmod +x ./process_job_details.sh
+          ./process_job_details.sh "${{ matrix.file }}"
 
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
@@ -133,7 +141,13 @@ jobs:
         run: |
           /home/runner/work/WebScrapJobs/WebScrapJobs/
           mkdir -p job_summary_files
-          unzip ./job-summaries/job-summaries.zip -d job_summary_files
+          
+          if [ -f "./job-summaries/job-summaries.zip" ]; then
+              echo "Found job-summaries.zip. Unzipping..."
+              unzip -o ./job-summaries/job-summaries.zip -d job_summary_files
+          else
+              echo "job-summaries.zip not found. Skipping unzip."
+          fi
 
       - name: Combine Job Summary Files
         run: python combine-job-summaries.py
@@ -256,7 +270,13 @@ jobs:
         run: |
           cd /home/runner/work/WebScrapJobs/WebScrapJobs/
           mkdir -p job_summary_files
-          unzip ./job-summaries/job-summaries.zip -d job_summary_files
+          
+          if [ -f "./job-summaries/job-summaries.zip" ]; then
+              echo "Found job-summaries.zip. Unzipping..."
+              unzip -o ./job-summaries/job-summaries.zip -d job_summary_files
+          else
+              echo "job-summaries.zip not found. Skipping unzip."
+          fi
 
       - name: Combine Job Summary Files
         run: python combine-job-summaries.py

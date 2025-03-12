@@ -4,51 +4,39 @@
 echo "Listing all files..."
 ls -R
 
-cd /home/runner/work/WebScrapJobs/WebScrapJobs/
-
-# Debug: Print current working directory
+# Print current working directory
 echo "Current working directory: $(pwd)"
 
-# Debug: Check if job-urls.zip exists
-echo "Checking for job-urls.zip in $(pwd)/job-urls..."
-ls -al ./job-urls
+# If job-urls.zip exists, unzip it; otherwise, assume files are already extracted
+if [ -f "./job-urls/job-urls.zip" ]; then
+  echo "Found job-urls.zip. Unzipping..."
+  unzip -o ./job-urls/job-urls.zip -d ./job-urls
 
-# Check if the zip file exists in the job-urls directory
-if [ ! -f "./job-urls/job-urls.zip" ]; then
-  echo "job-urls.zip not found in the job-urls directory!"
-  exit 1
+  # Check if unzip was successful
+  if [ $? -ne 0 ]; then
+    echo "Unzip failed!"
+    exit 1
+  fi
+else
+  echo "job-urls.zip not found. Assuming files are already extracted."
 fi
-
-# Debug: Check contents of job-urls.zip
-echo "Checking contents of job-urls.zip..."
-unzip -l ./job-urls/job-urls.zip
-
-# Unzip job-urls.zip into the current directory (or specific directory)
-echo "Unzipping job-urls.zip..."
-unzip ./job-urls/job-urls.zip -d ./job-urls
-
-# Check if unzip was successful
-if [ $? -ne 0 ]; then
-  echo "Unzip failed!"
-  exit 1
-fi
-
-# Debug: List files in job-urls directory after unzip
-echo "Listing files in job-urls directory:"
-ls -al ./job-urls
-
-# Debug: List JSON files explicitly
-echo "Listing JSON files in job-urls directory:"
-ls -al ./job-urls/job_urls*.json
 
 # Get all the JSON files from the job-urls directory and format them into JSON
-files=$(ls ./job-urls/job_urls*.json | jq -R -s -c 'split("\n")[:-1] | map({"file": .})')
+files=$(ls ./job-urls/job_urls*.json 2>/dev/null | jq -R -s -c 'split("\n") | map(select(length > 0)) | map({"file": .})')
 
-# If no files are found, exit with an error
-if [ "$files" == "[]" ]; then
+# Print the JSON files list
+echo "Extracted JSON files:"
+echo "$files" | jq .
+
+# Check if `files` is empty
+if [ "$files" == "[]" ] || [ -z "$files" ]; then
   echo "No job URL chunks found"
   exit 1
 fi
 
 # Output the file list to GitHub actions
-echo "files=$files" >> $GITHUB_OUTPUT
+{
+  echo "files=$files"
+} >> "$GITHUB_OUTPUT"
+
+echo "Writing to GITHUB_OUTPUT -> files=$files"
