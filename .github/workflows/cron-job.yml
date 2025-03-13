@@ -93,7 +93,8 @@ jobs:
         file: ${{ fromJson(needs.fetch-job-details.outputs.files) }}
       max-parallel: 3
     concurrency:
-      group: "run-job-details-${{ github.ref }}"
+      group: "run-job-details-${{ github.ref }}-${{ github.run_id }}"
+      cancel-in-progress: false
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -162,7 +163,7 @@ jobs:
 
       - name: Unzip Job Summary Files
         run: |
-          /home/runner/work/WebScrapJobs/WebScrapJobs/
+          ls -R
           mkdir -p job_summary_files
           
           if [ -f "./job-summaries/job-summaries.zip" ]; then

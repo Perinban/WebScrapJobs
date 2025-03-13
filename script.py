@@ -106,6 +106,10 @@ with ThreadPoolExecutor(max_workers=8) as executor:
 
 # ========================= Save Extracted Job Links to File =========================
 output_file = "job_post_url.txt"
+
+# Deduplicate before saving
+job_post_url = set(job_post_url)  # Convert to set to remove duplicates, then sort
+
 with open(output_file, "w") as file:
     for url in job_post_url:
         file.write(url + "\n")
