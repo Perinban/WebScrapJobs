@@ -101,9 +101,9 @@ jobs:
       - name: Extract File Name
         id: extract_filename
         run: |
-          # Remove the './job-urls/' prefix from the file path
-          filename="${${{ matrix.file.file }}#./job-urls/}"
-          echo "filename=${filename}" >> $GITHUB_OUTPUT
+          filename="${{ matrix.file.file }}"
+          filename="${filename#./job-urls/}"
+          echo "filename=${filename}" >> "$GITHUB_OUTPUT"
 
       - name: Download Specific File from Artifact
         uses: actions/download-artifact@v4
