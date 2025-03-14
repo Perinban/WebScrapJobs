@@ -14,8 +14,8 @@ else:
     print("Failed to retrieve the job URLs.")
     job_post_url = []
 
-# Split into multiple files if more than 25,000 records
-chunk_size = 25000
+# Split into multiple files if more than 5,000 records
+chunk_size = 5000
 for i in range(0, len(job_post_url), chunk_size):
     chunk = job_post_url[i:i + chunk_size]
     output_file = f"job_urls_{i // chunk_size + 1}.json"  # Intermediate file naming
