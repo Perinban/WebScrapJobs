@@ -8,11 +8,15 @@ from googleapiclient.errors import HttpError
 def upload_to_drive():
     try:
         # Load service account credentials
-        service_account_info = json.loads(os.getenv('GDRIVE_SERVICE_ACCOUNT_KEY'))
+        service_account_key = os.getenv('GDRIVE_SERVICE_ACCOUNT_KEY')
+        if not service_account_key:
+            raise ValueError("GDRIVE_SERVICE_ACCOUNT_KEY environment variable is not set")
+
+        service_account_info = json.loads(service_account_key)
         credentials = service_account.Credentials.from_service_account_info(service_account_info)
         drive_service = build('drive', 'v3', credentials=credentials)
 
-        # Get Folder ID from env variable
+        # Get Folder ID from env variable (must be a shared folder in personal Google Drive)
         folder_id = os.getenv('GDRIVE_FOLDER_ID')
         if not folder_id:
             raise ValueError("GDRIVE_FOLDER_ID environment variable is not set")
@@ -34,8 +38,19 @@ def upload_to_drive():
         file_metadata = {'name': file_name, 'parents': [folder_id]}
         media = MediaFileUpload(file_name, mimetype='application/json')
         new_file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        file_id = new_file.get("id")
 
-        print(f'File uploaded to Google Drive with ID: {new_file.get("id")}')
+        print(f'File uploaded to Google Drive with ID: {file_id}')
+
+        # Grant permission to your personal email
+        permission = {
+            'type': 'user',
+            'role': 'writer',  # 'writer' allows full access
+            'emailAddress': 'p.perinban@gmail.com'
+        }
+        drive_service.permissions().create(fileId=file_id, body=permission, sendNotificationEmail=False).execute()
+
+        print(f'File shared with p.perinban@gmail.com')
 
     except json.JSONDecodeError:
         print("Error: Invalid JSON in GDRIVE_SERVICE_ACCOUNT_KEY environment variable.")
@@ -43,7 +58,6 @@ def upload_to_drive():
         print(f"Google Drive API error: {error}")
     except Exception as e:
         print(f"Unexpected error: {e}")
-
 
 if __name__ == "__main__":
     upload_to_drive()

@@ -134,7 +134,7 @@ jobs:
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: job-summaries
+          name: job-summaries-${{ github.run_id }}
           path: job_summary_*.json
 
   combine-and-upload:
@@ -147,11 +147,37 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Job Summary Files
-        uses: actions/download-artifact@v4
+      - name: List Available Artifacts
+        id: list-artifacts
+        uses: actions/github-script@v7
         with:
-          name: job-summaries
-          path: ./job-summaries
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+      
+            const jobSummaries = artifacts.data.artifacts
+              .filter(a => a.name.startsWith('job-summaries-'))
+              .map(a => a.name);
+      
+            if (jobSummaries.length === 0) {
+              core.setFailed("No job summary artifacts found.");
+            }
+      
+            core.setOutput("artifacts", jobSummaries.join(' '));
+
+      - name: Download Job Summary Files
+        run: |
+          for artifact in ${{ steps.list-artifacts.outputs.artifacts }}; do
+            echo "Downloading $artifact"
+            gh run download --repo $GITHUB_REPOSITORY --name "$artifact" --dir ./job-summaries
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Debug Downloaded Files
+        run: ls -l ./job-summaries
 
       - name: Set Up Python
         uses: actions/setup-python@v5
@@ -166,11 +192,16 @@ jobs:
           ls -R
           mkdir -p job_summary_files
           
-          if [ -f "./job-summaries/job-summaries.zip" ]; then
-              echo "Found job-summaries.zip. Unzipping..."
-              unzip -o ./job-summaries/job-summaries.zip -d job_summary_files
+          zip_files=$(find ./job-summaries -name "*.zip")
+          
+          if [ -n "$zip_files" ]; then
+              echo "Found zip files: $zip_files"
+              for zip_file in $zip_files; do
+                  echo "Unzipping $zip_file..."
+                  unzip -o "$zip_file" -d job_summary_files
+              done
           else
-              echo "job-summaries.zip not found. Skipping unzip."
+              echo "No job summary zip files found. Skipping unzip."
           fi
 
       - name: Combine Job Summary Files
