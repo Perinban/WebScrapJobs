@@ -45,12 +45,16 @@ def upload_to_drive():
         # Grant permission to your personal email
         permission = {
             'type': 'user',
-            'role': 'writer',  # 'writer' allows full access
+            'role': 'writer',
             'emailAddress': 'p.perinban@gmail.com'
         }
         drive_service.permissions().create(fileId=file_id, body=permission, sendNotificationEmail=False).execute()
 
         print(f'File shared with p.perinban@gmail.com')
+
+        # Print Google Drive link
+        drive_link = f"https://drive.google.com/file/d/{file_id}"
+        print(f'Google Drive Link: {drive_link}')
 
     except json.JSONDecodeError:
         print("Error: Invalid JSON in GDRIVE_SERVICE_ACCOUNT_KEY environment variable.")
