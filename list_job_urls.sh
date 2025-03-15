@@ -21,8 +21,8 @@ else
   echo "job-urls.zip not found. Assuming files are already extracted."
 fi
 
-# Get all the JSON files from the job-urls directory and format them into JSON
-files=$(ls ./job-urls/job_urls*.json 2>/dev/null | jq -R -s -c 'split("\n") | map(select(length > 0)) | map({"file": .})')
+# Get all the JSON files from the job-urls directory, remove the prefix, and format them into JSON
+files=$(ls ./job-urls/job_urls*.json 2>/dev/null | sed 's|./job-urls/||' | jq -R -s -c 'split("\n") | map(select(length > 0)) | map({"file": .})')
 
 # Print the JSON files list
 echo "Extracted JSON files:"

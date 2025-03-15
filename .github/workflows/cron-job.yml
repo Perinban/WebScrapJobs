@@ -89,7 +89,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'both' }}
     runs-on: ubuntu-latest
     concurrency:
-      group: "run-job-details-${{ github.ref }}-${{ github.run_number }}-${{ github.run_attempt }}"
+      group: "run-job-details-${{ github.ref }}-${{ matrix.file.file }}"
       cancel-in-progress: false
     strategy:
       matrix:
@@ -98,19 +98,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Extract File Name
-        id: extract_filename
-        run: |
-          filename="${{ matrix.file.file }}"
-          filename="${filename#./job-urls/}"
-          echo "filename=${filename}" >> "$GITHUB_OUTPUT"
-
       - name: Download Specific File from Artifact
         uses: actions/download-artifact@v4
         with:
           name: job-urls
           path: ./job-urls
-          pattern: ${{ steps.extract_filename.outputs.filename }}
+          pattern: ${{ matrix.file.file }}
 
       - name: Debug Matrix Files
         run: |
@@ -133,7 +126,7 @@ jobs:
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: job-summary-${{ github.run_id }}-${{ steps.extract_filename.outputs.filename }}
+          name: job-summary-${{ github.run_id }}-${{ matrix.file.file }}
           path: job_summary_*.json
 
   combine-and-upload:
