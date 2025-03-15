@@ -88,13 +88,12 @@ jobs:
     needs: fetch-job-details
     if: ${{ github.event_name == 'schedule' || github.event.inputs.scraper == 'both' }}
     runs-on: ubuntu-latest
+    concurrency:
+      group: "run-job-details-${{ github.ref }}-${{ github.run_number }}-${{ github.run_attempt }}"
+      cancel-in-progress: false
     strategy:
       matrix:
         file: ${{ fromJson(needs.fetch-job-details.outputs.files) }}
-      max-parallel: 3
-    concurrency:
-      group: "run-job-details-${{ github.ref }}-${{ github.run_id }}"
-      cancel-in-progress: false
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -134,7 +133,7 @@ jobs:
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: job-summary-${{ matrix.file.file }}-${{ github.run_id }}
+          name: job-summary-${{ github.run_id }}-${{ steps.extract_filename.outputs.filename }}
           path: job_summary_*.json
 
   combine-and-upload:
