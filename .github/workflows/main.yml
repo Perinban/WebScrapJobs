@@ -1,0 +1,32 @@
+name: Google Drive Test
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  upload-to-drive:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Check if secrets are available
+      run: |
+        echo "GDRIVE_SERVICE_ACCOUNT_KEY is set: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY != '' }}"
+        echo "GDRIVE_FOLDER_ID is set: ${{ secrets.GDRIVE_FOLDER_ID != '' }}"
+        echo "GDRIVE_SHARE_EMAIL is set: ${{ secrets.GDRIVE_SHARE_EMAIL != '' }}"
+      env:
+        GDRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY }}
+        GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        GDRIVE_SHARE_EMAIL: ${{ secrets.GDRIVE_SHARE_EMAIL }}
+
+    - name: Upload file to Google Drive
+      run: |
+        python upload-to-gdrive.py
+      env:
+        GDRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY }}
+        GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+        GDRIVE_SHARE_EMAIL: ${{ secrets.GDRIVE_SHARE_EMAIL }}
