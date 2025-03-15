@@ -179,6 +179,8 @@ jobs:
       - name: Upload to Google Drive
         env:
           GDRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GDRIVE_SHARE_EMAIL: ${{ secrets.GDRIVE_SHARE_EMAIL }}
         run: python upload-to-gdrive.py
 
   manual-fetch-job-urls:
@@ -223,6 +225,8 @@ jobs:
     if: ${{ github.event.inputs.scraper == 'details' }}
     concurrency:
       group: "fetch-job-details-${{ github.ref }}"
+    outputs:
+      files: ${{ steps.list_files.outputs.files }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -236,30 +240,52 @@ jobs:
       - name: List Job URL Chunks
         id: list_files
         run: |
+          chmod +x ./list_job_urls.sh
           ./list_job_urls.sh
 
   manual-run-job-details:
     needs: manual-fetch-job-details
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.scraper == 'details' }}
+    concurrency:
+      group: "run-job-details-${{ github.ref }}-${{ matrix.file.file }}"
+      cancel-in-progress: false
     strategy:
       matrix:
-        file: ${{ fromJson(needs.manual-fetch-job-details.outputs.files) }}
-      max-parallel: 3
-    concurrency:
-      group: "run-job-details-${{ github.ref }}"
+        file: ${{ fromJson(needs.fetch-job-details.outputs.files) }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Download Specific File from Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: job-urls
+          path: ./job-urls
+          pattern: ${{ matrix.file.file }}
+
+      - name: Debug Matrix Files
+        run: |
+          echo "Processing file: ${{ matrix.file.file }}"
+          ls -l ./job-urls
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
       - name: Run Job Details Scraper
         run: |
-          ./process_job_details.sh
+          chmod +x ./process_job_details.sh
+          ./process_job_details.sh "${{ matrix.file.file }}"
 
       - name: Upload Job Summary Files as Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: job-summaries
+          name: job-summary-${{ github.run_id }}-${{ matrix.file.file }}
           path: job_summary_*.json
 
   manual-combine-and-upload:
@@ -274,8 +300,11 @@ jobs:
       - name: Download Job Summary Files
         uses: actions/download-artifact@v4
         with:
-          name: job-summaries
+          pattern: job-summary*
           path: ./job-summaries
+
+      - name: Debug Downloaded Files
+        run: ls -l ./job-summaries
 
       - name: Set Up Python
         uses: actions/setup-python@v5
@@ -287,14 +316,19 @@ jobs:
 
       - name: Unzip Job Summary Files
         run: |
-          cd /home/runner/work/WebScrapJobs/WebScrapJobs/
+          ls -R
           mkdir -p job_summary_files
           
-          if [ -f "./job-summaries/job-summaries.zip" ]; then
-              echo "Found job-summaries.zip. Unzipping..."
-              unzip -o ./job-summaries/job-summaries.zip -d job_summary_files
+          zip_files=$(find ./job-summaries -name "*.zip")
+          
+          if [ -n "$zip_files" ]; then
+              echo "Found zip files: $zip_files"
+              for zip_file in $zip_files; do
+                  echo "Unzipping $zip_file..."
+                  unzip -o "$zip_file" -d job_summary_files
+              done
           else
-              echo "job-summaries.zip not found. Skipping unzip."
+              echo "No job summary zip files found. Skipping unzip."
           fi
 
       - name: Combine Job Summary Files
@@ -303,9 +337,6 @@ jobs:
       - name: Upload to Google Drive
         env:
           GDRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_KEY }}
-        run: |
-          if [ -z "$GDRIVE_SERVICE_ACCOUNT_KEY" ]; then
-            echo "GDRIVE_SERVICE_ACCOUNT_KEY is not set"
-            exit 1
-          fi
-          python upload-to-gdrive.py
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GDRIVE_SHARE_EMAIL: ${{ secrets.GDRIVE_SHARE_EMAIL }}
+        run: python upload-to-gdrive.py

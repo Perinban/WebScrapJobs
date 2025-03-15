@@ -16,10 +16,15 @@ def upload_to_drive():
         credentials = service_account.Credentials.from_service_account_info(service_account_info)
         drive_service = build('drive', 'v3', credentials=credentials)
 
-        # Get Folder ID from env variable (must be a shared folder in personal Google Drive)
+        # Get Folder ID from environment variable
         folder_id = os.getenv('GDRIVE_FOLDER_ID')
         if not folder_id:
             raise ValueError("GDRIVE_FOLDER_ID environment variable is not set")
+
+        # Get Email Address from environment variable
+        email_address = os.getenv('GDRIVE_SHARE_EMAIL')
+        if not email_address:
+            raise ValueError("GDRIVE_SHARE_EMAIL environment variable is not set")
 
         file_name = 'job_summary.json'
 
@@ -42,15 +47,15 @@ def upload_to_drive():
 
         print(f'File uploaded to Google Drive with ID: {file_id}')
 
-        # Grant permission to your personal email
+        # Grant permission to the specified email address
         permission = {
             'type': 'user',
             'role': 'writer',
-            'emailAddress': 'p.perinban@gmail.com'
+            'emailAddress': email_address
         }
         drive_service.permissions().create(fileId=file_id, body=permission, sendNotificationEmail=False).execute()
 
-        print(f'File shared with p.perinban@gmail.com')
+        print(f'File shared with {email_address}')
 
         # Print Google Drive link
         drive_link = f"https://drive.google.com/file/d/{file_id}"
