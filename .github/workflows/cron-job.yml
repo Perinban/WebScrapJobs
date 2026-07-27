@@ -277,7 +277,7 @@ jobs:
 
   manual-combine-and-upload:
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.scraper != 'both' && github.event.inputs.combine_upload == 'yes' }}
+    if: ${{ github.event.inputs.scraper == 'details' && github.event.inputs.combine_upload == 'yes' }}
     concurrency:
       group: "combine-and-upload-${{ github.ref }}"
     steps:
