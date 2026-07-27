@@ -83,18 +83,12 @@ def scrape_company(company_name):
     return job_links
 
 # ========================= Execute Scraping in Parallel =========================
+# Build a clean snapshot of currently advertised jobs. Do not merge historical
+# URLs from the previous run; missing URLs must disappear from the refreshed list.
 job_post_url = []
+worker_count = int(os.getenv("JOB_URL_WORKERS", "16"))
 
-JOB_POST_URL_SOURCE = "https://raw.githubusercontent.com/Perinban/WebScrapJobs/main/job_post_url.txt"
-
-try:
-    response = requests.get(JOB_POST_URL_SOURCE, timeout=10)
-    response.raise_for_status()
-    job_post_url = response.text.splitlines()
-except requests.exceptions.RequestException as e:
-    logger.error(f"Failed to fetch job post URLs from GitHub: {e}")
-
-with ThreadPoolExecutor(max_workers=8) as executor:
+with ThreadPoolExecutor(max_workers=worker_count) as executor:
     futures = {executor.submit(scrape_company, company_name): company_name for company_name in unique_company_list}
 
     for future in as_completed(futures):
@@ -107,11 +101,11 @@ with ThreadPoolExecutor(max_workers=8) as executor:
 # ========================= Save Extracted Job Links to File =========================
 output_file = "job_post_url.txt"
 
-# Deduplicate before saving
-job_post_url = set(job_post_url)  # Convert to set to remove duplicates, then sort
+# Deduplicate, remove empty values, and sort for deterministic commits.
+job_post_url = sorted({url.strip() for url in job_post_url if isinstance(url, str) and url.strip()})
 
-with open(output_file, "w") as file:
+with open(output_file, "w", encoding="utf-8") as file:
     for url in job_post_url:
         file.write(url + "\n")
 
-logger.info(f"Job post URLs saved successfully to {output_file}.")
+logger.info("Saved %d current unique job URLs to %s.", len(job_post_url), output_file)
